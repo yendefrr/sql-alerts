@@ -1,0 +1,23 @@
+{
+  "database": {
+    "username": "",
+    "password": "",
+    "host": "",
+    "port": "",
+    "name": ""
+  },
+  "queries": [
+    {
+      "name": "example",
+      "query": "SELECT id FROM table",
+      "notificationUrl": "https://ntfy.sh/example"
+    },
+    {
+      "name": "",
+      "query": ""
+    }
+  ],
+  "baseNotificationUrl": "https://ntfy.sh/base",
+  "notificationMessage": "New %d rows",
+  "checkIntervalMinutes": 1
+}
