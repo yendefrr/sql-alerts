@@ -34,6 +34,7 @@ type QueryConfig struct {
 	Name            string `json:"name"`
 	Query           string `json:"query"`
 	NotificationUrl string `json:"notificationUrl,omitempty"`
+	Disabled        bool   `json:"disabled,omitempty"`
 }
 
 func main() {
@@ -67,10 +68,13 @@ func main() {
 	// Run monitoring loop
 	for {
 		for _, queryConfig := range config.Queries {
-			err := monitorAndNotify(db, config, queryConfig)
-			if err != nil {
-				log.Printf("Error during monitoring: %v", err)
+			if queryConfig.Disabled != true {
+				err := monitorAndNotify(db, config, queryConfig)
+				if err != nil {
+					log.Printf("Error during monitoring: %v", err)
+				}
 			}
+
 		}
 
 		// Sleep for the specified interval before checking again

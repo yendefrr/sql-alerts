@@ -12,6 +12,8 @@ Rename config.example.json to config.json and fill your values
 
 All queries must be `SELECT` type and query only one column that should be unique ID
 
+For disable query provide `"disabled": true` parameter
+
 ### Usage
 
 After configuration run

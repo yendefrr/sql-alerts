@@ -14,7 +14,8 @@
     },
     {
       "name": "",
-      "query": ""
+      "query": "",
+      "disabled": true
     }
   ],
   "baseNotificationUrl": "https://ntfy.sh/base",
