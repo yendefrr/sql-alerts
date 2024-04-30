@@ -1,4 +1,4 @@
-module sql-alerts
+module github.com/yendefrr/sql-alerts
 
 go 1.21.6
 
