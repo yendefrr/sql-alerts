@@ -16,7 +16,7 @@ builds:
       - CGO_ENABLED=0
 
   - id: darwin
-    main: ./cmd/sqlal/main.go
+    main: .
     goos:
       - darwin
     env:
