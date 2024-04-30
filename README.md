@@ -19,8 +19,9 @@ For disable query provide `"disabled": true` parameter
 After configuration run
 
 ```
-go build
-./sql-alerts
+go install github.com/yendefrr/sql-alerts
+sudo sqlal --config <path-to-config> # first run to create runtime directory
+sqlal --config <path-to-config> # then
 ```
 
 ### TODO
