@@ -17,6 +17,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+var currentVersion = "0.4.4"
+
 const (
 	defaultConfigFileName = "config.json"
 	defaultConfigDir      = ".config/sqlal"
@@ -61,7 +63,7 @@ func main() {
 	flag.Parse()
 
 	if version {
-		fmt.Println("0.4.3")
+		fmt.Println(currentVersion)
 		return
 	}
 
