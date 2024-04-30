@@ -20,8 +20,7 @@ After configuration run
 
 ```
 go install github.com/yendefrr/sql-alerts
-sudo sqlal --config <path-to-config> # first run to create runtime directory
-sqlal --config <path-to-config> # then
+sqlal --config <path-to-config> # or edit .config/sqlal/config.json
 ```
 
 ### TODO
