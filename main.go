@@ -17,7 +17,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var currentVersion = "0.4.4"
+var currentVersion = "0.4.5"
 
 const (
 	defaultConfigFileName = "config.json"
