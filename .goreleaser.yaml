@@ -9,7 +9,7 @@ before:
 
 builds:
   - id: linux
-    main: ./cmd/sqlal/main.go
+    main: .
     goos:
       - linux
     env:
