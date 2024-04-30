@@ -59,7 +59,7 @@ func main() {
 	}
 
 	flag.StringVar(&configFile, "config", getDefaultConfigFilePath(), "Path to configuration file")
-	flag.BoolVar(&version, "version", false, "Print version information and exit")
+	flag.BoolVar(&version, "v", false, "Print version information and exit")
 	flag.Parse()
 
 	if version {
