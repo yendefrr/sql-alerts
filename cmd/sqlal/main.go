@@ -3,10 +3,12 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -38,9 +40,18 @@ type QueryConfig struct {
 }
 
 func main() {
-	config, err := loadConfig("config.json")
+	configFile := flag.String("config", "config.json", "Path to configuration file")
+	flag.Parse()
+
+	config, err := loadConfig(*configFile)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// Create processed directory if it doesn't exist
+	processedDir := "/var/lib/sqlal/processed"
+	if err := os.MkdirAll(processedDir, 0755); err != nil {
+		log.Fatalf("Failed to create processed directory: %v", err)
 	}
 
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.Database.Username, config.Database.Password, config.Database.Host, config.Database.Port, config.Database.Name))
@@ -68,13 +79,12 @@ func main() {
 	// Run monitoring loop
 	for {
 		for _, queryConfig := range config.Queries {
-			if queryConfig.Disabled != true {
-				err := monitorAndNotify(db, config, queryConfig)
+			if !queryConfig.Disabled {
+				err := monitorAndNotify(db, config, queryConfig, processedDir)
 				if err != nil {
 					log.Printf("Error during monitoring: %v", err)
 				}
 			}
-
 		}
 
 		// Sleep for the specified interval before checking again
@@ -82,70 +92,81 @@ func main() {
 	}
 }
 
-func monitorAndNotify(db *sql.DB, config Config, queryConfig QueryConfig) error {
-	// Read processed IDs from the file
-	processedIDs, err := readProcessedIDs(queryConfig.Name)
-	if err != nil {
-		return err
-	}
+func monitorAndNotify(db *sql.DB, config Config, queryConfig QueryConfig, processedDir string) error {
+    // Read processed IDs from the file
+    processedIDs, err := readProcessedIDs(queryConfig.Name, processedDir)
+    if err != nil {
+        return err
+    }
 
-	// Execute the SQL query
-	rows, err := db.Query(queryConfig.Query)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
+    // Get new rows from the database
+    newRows, err := getNewRows(db, queryConfig.Query, processedIDs)
+    if err != nil {
+        return err
+    }
 
-	// Check for new rows and send notifications
-	var newRows []int
-	for rows.Next() {
-		var id int
+    // Send notifications for new rows
+    if len(newRows) > 0 {
+        err := sendNotifications(config, queryConfig, newRows)
+        if err != nil {
+            return err
+        }
 
-		err := rows.Scan(&id)
-		if err != nil {
-			return err
-		}
+        // Update processedIDs with new rows
+        processedIDs = append(processedIDs, newRows...)
+        err = writeProcessedIDs(queryConfig.Name, processedIDs, processedDir)
+        if err != nil {
+            return err
+        }
+    }
 
-		// Check if the row ID is not in the processedIDs list
-		if !contains(processedIDs, id) {
-			newRows = append(newRows, id)
-		}
-	}
+    return nil
+}
 
-	if len(newRows) > 0 {
-		// Use query-specific NotificationUrl if provided, otherwise use the main one
-		var url string
-		if queryConfig.NotificationUrl != "" {
-			url = queryConfig.NotificationUrl
-		} else {
-			url = config.BaseNotificationUrl
-		}
+func getNewRows(db *sql.DB, query string, processedIDs []int) ([]int, error) {
+    rows, err := db.Query(query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
 
-		// Send HTTP POST request to the specified endpoint
-		message := fmt.Sprintf(queryConfig.Name+": "+config.NotificationMessage, len(newRows))
-		payload := strings.NewReader(message)
+    var newRows []int
+    for rows.Next() {
+        var id int
+        err := rows.Scan(&id)
+        if err != nil {
+            return nil, err
+        }
+        if !contains(processedIDs, id) {
+            newRows = append(newRows, id)
+        }
+    }
+    return newRows, nil
+}
 
-		resp, err := http.Post(url, "text/plain", payload)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
+func sendNotifications(config Config, queryConfig QueryConfig, newRows []int) error {
+    var url string
+    if queryConfig.NotificationUrl != "" {
+        url = queryConfig.NotificationUrl
+    } else {
+        url = config.BaseNotificationUrl
+    }
 
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("HTTP request failed with status code: %d", resp.StatusCode)
-		}
+    message := fmt.Sprintf(queryConfig.Name+": "+config.NotificationMessage, len(newRows))
+    payload := strings.NewReader(message)
 
-		log.Printf("Notification sent for query %s: %s", queryConfig.Name, message)
+    resp, err := http.Post(url, "text/plain", payload)
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
 
-		// Append new row IDs to the processedIDs list and update the file
-		processedIDs = append(processedIDs, newRows...)
-		err = writeProcessedIDs(queryConfig.Name, processedIDs)
-		if err != nil {
-			return err
-		}
-	}
+    if resp.StatusCode != http.StatusOK {
+        return fmt.Errorf("HTTP request failed with status code: %d", resp.StatusCode)
+    }
 
-	return nil
+    log.Printf("Notification sent for query %s: %s", queryConfig.Name, message)
+    return nil
 }
 
 func loadConfig(filename string) (Config, error) {
@@ -163,8 +184,8 @@ func loadConfig(filename string) (Config, error) {
 	return config, nil
 }
 
-func readProcessedIDs(queryName string) ([]int, error) {
-	filePath := fmt.Sprintf("./processed/%s_%s", queryName, "processed_ids.txt")
+func readProcessedIDs(queryName, directory string) ([]int, error) {
+	filePath := filepath.Join(directory, fmt.Sprintf("%s_%s", queryName, "processed_ids.txt"))
 
 	// Check if the file exists, and create it if not
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -192,9 +213,8 @@ func readProcessedIDs(queryName string) ([]int, error) {
 
 	return processedIDs, nil
 }
-
-func writeProcessedIDs(queryName string, processedIDs []int) error {
-	filePath := fmt.Sprintf("./processed/%s_%s", queryName, "processed_ids.txt")
+func writeProcessedIDs(queryName string, processedIDs []int, directory string) error {
+	filePath := filepath.Join(directory, fmt.Sprintf("%s_%s", queryName, "processed_ids.txt"))
 	idStr := ""
 	for _, id := range processedIDs {
 		idStr += fmt.Sprint(id) + "\n"
