@@ -17,7 +17,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var currentVersion = "0.4.5"
+var version = "0.4.5"
 
 const (
 	defaultConfigFileName = "config.json"
@@ -26,7 +26,7 @@ const (
 
 var (
 	configFile string
-	version    bool
+	flagVersion    bool
 )
 
 type Config struct {
@@ -59,11 +59,11 @@ func main() {
 	}
 
 	flag.StringVar(&configFile, "config", getDefaultConfigFilePath(), "Path to configuration file")
-	flag.BoolVar(&version, "v", false, "Print version information and exit")
+	flag.BoolVar(&flagVersion, "v", false, "Print version information and exit")
 	flag.Parse()
 
-	if version {
-		fmt.Println(currentVersion)
+	if flagVersion {
+		fmt.Println(version)
 		return
 	}
 
