@@ -22,7 +22,10 @@ const (
 	defaultConfigDir      = ".config/sqlal"
 )
 
-var configFile string
+var (
+	configFile string
+	version    bool
+)
 
 type Config struct {
 	Database             DatabaseConfig `json:"database"`
@@ -54,7 +57,13 @@ func main() {
 	}
 
 	flag.StringVar(&configFile, "config", getDefaultConfigFilePath(), "Path to configuration file")
+	flag.BoolVar(&version, "version", false, "Print version information and exit")
 	flag.Parse()
+
+	if version {
+		fmt.Println("0.4.3")
+		return
+	}
 
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
