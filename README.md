@@ -16,7 +16,7 @@ For disable query provide `"disabled": true` parameter
 
 ### Installation
 ```bash
-go install github.com/yendefrr/sql-alerts
+go install github.com/yendefrr/sql-alerts@v0.4.3
 ```
 
 ### Usage
