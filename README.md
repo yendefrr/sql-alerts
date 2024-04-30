@@ -14,16 +14,26 @@ All queries must be `SELECT` type and query only one column that should be uniqu
 
 For disable query provide `"disabled": true` parameter
 
+### Installation
+```bash
+go install github.com/yendefrr/sql-alerts
+```
+
 ### Usage
 
 After configuration run
 
+```bash
+sqlal start --config <path-to-config> 
+sqlal start # or edit .config/sqlal/config.json and run it
 ```
-go install github.com/yendefrr/sql-alerts
-sqlal --config <path-to-config> # or edit .config/sqlal/config.json
+
+To stop service
+```bash
+sqlal stop
 ```
 
 ### TODO
 
 - [ ] Other SQL drivers
-- [ ] Run in background
+- [x] Run in background

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -54,6 +55,17 @@ func main() {
 
 	flag.StringVar(&configFile, "config", getDefaultConfigFilePath(), "Path to configuration file")
 	flag.Parse()
+
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "start":
+			start()
+			return
+		case "stop":
+			stop()
+			return
+		}
+	}
 
 	config, err := loadConfig(configFile)
 	if err != nil {
@@ -298,4 +310,24 @@ func contains(slice []int, item int) bool {
 		}
 	}
 	return false
+}
+
+func start() {
+	fmt.Println("Starting sqlal...")
+	cmd := exec.Command(os.Args[0])
+	err := cmd.Start()
+	if err != nil {
+		log.Fatalf("Failed to start sqlal: %v", err)
+	}
+	fmt.Println("sqlal started successfully.")
+}
+
+func stop() {
+	fmt.Println("Stopping sqlal...")
+	out, err := exec.Command("pkill", "-f", os.Args[0]).CombinedOutput()
+	if err != nil {
+		log.Fatalf("Failed to stop sqlal: %v", err)
+	}
+	fmt.Println(string(out))
+	fmt.Println("sqlal stopped.")
 }
