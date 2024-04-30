@@ -17,7 +17,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var version = "0.4.5"
+var version = "0.4.8"
 
 const (
 	defaultConfigFileName = "config.json"
@@ -25,8 +25,8 @@ const (
 )
 
 var (
-	configFile string
-	flagVersion    bool
+	configFile  string
+	flagVersion bool
 )
 
 type Config struct {
@@ -53,7 +53,6 @@ type QueryConfig struct {
 }
 
 func main() {
-	// Automatically create default config and processed directories if they don't exist
 	if err := initializeDirectories(); err != nil {
 		log.Fatalf("Failed to initialize directories: %v", err)
 	}
@@ -63,7 +62,7 @@ func main() {
 	flag.Parse()
 
 	if flagVersion {
-		fmt.Println(version)
+		printVersion()
 		return
 	}
 
@@ -83,35 +82,52 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Create processed directory if it doesn't exist
+	processedDir := createProcessedDir()
+
+	db := connectToDatabase(config)
+	defer db.Close()
+
+	sendInitialNotification(config)
+
+	runMonitoringLoop(db, config, processedDir)
+}
+
+func printVersion() {
+	fmt.Println(version)
+	os.Exit(0)
+}
+
+func createProcessedDir() string {
 	processedDir := filepath.Join(getUserConfigDir(), "processed")
 	if err := os.MkdirAll(processedDir, 0755); err != nil {
 		log.Fatalf("Failed to create processed directory: %v", err)
 	}
+	return processedDir
+}
 
+func connectToDatabase(config Config) *sql.DB {
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.Database.Username, config.Database.Password, config.Database.Host, config.Database.Port, config.Database.Name))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
-
 	log.Println("Connection with database established")
+	return db
+}
 
+func sendInitialNotification(config Config) {
 	payload := strings.NewReader("Monitoring server started")
-
 	resp, err := http.Post(config.BaseNotificationUrl, "text/plain", payload)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		log.Fatalf("HTTP request failed with status code: %d", resp.StatusCode)
 	}
-
 	log.Print("Initial notification sent")
+}
 
-	// Run monitoring loop
+func runMonitoringLoop(db *sql.DB, config Config, processedDir string) {
 	for {
 		for _, queryConfig := range config.Queries {
 			if !queryConfig.Disabled {
@@ -121,8 +137,6 @@ func main() {
 				}
 			}
 		}
-
-		// Sleep for the specified interval before checking again
 		time.Sleep(config.CheckIntervalMinutes * time.Minute)
 	}
 }
