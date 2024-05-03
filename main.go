@@ -14,7 +14,9 @@ import (
 	"strings"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/yendefrr/sql-alerts/internal"
 )
 
 var version = "0.4.8"
@@ -74,6 +76,13 @@ func main() {
 		case "stop":
 			stop()
 			return
+		case "config":
+			p := tea.NewProgram(internal.InitialModel(), tea.WithAltScreen())
+			if _, err := p.Run(); err != nil {
+				fmt.Printf("Alas, there's been an error: %v", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
 		}
 	}
 
