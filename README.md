@@ -8,7 +8,7 @@ Support MySQL only
 
 ### Configuration
 
-Rename config.example.json to config.json and fill your values
+Edit `.config/sqlal/config.json`
 
 All queries must be `SELECT` type and query only one column that should be unique ID
 
