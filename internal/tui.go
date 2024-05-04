@@ -62,7 +62,7 @@ func InitialModel() model {
 	m := model{
 		selected:    nil,
 		topButtons:  []string{"Configure database", "Create new query\n"},
-		inputsQuery: make([]textinput.Model, 2),
+		inputsQuery: make([]textinput.Model, 3),
 	}
 
 	m.SetInputsQuery()
@@ -85,6 +85,8 @@ func (m *model) SetInputsQuery() {
 			t.TextStyle = focusedStyle
 		case 1:
 			t.Placeholder = "URL"
+		case 2:
+			t.Placeholder = "Disabled (y/n)"
 		}
 
 		m.inputsQuery[i] = t
