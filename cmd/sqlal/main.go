@@ -32,29 +32,6 @@ var (
 	flagVersion bool
 )
 
-type Config struct {
-	Database             DatabaseConfig `json:"database"`
-	Queries              []QueryConfig  `json:"queries"`
-	BaseNotificationUrl  string         `json:"baseNotificationUrl"`
-	NotificationMessage  string         `json:"notificationMessage"`
-	CheckIntervalMinutes time.Duration  `json:"checkIntervalMinutes"`
-}
-
-type DatabaseConfig struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Name     string `json:"name"`
-}
-
-type QueryConfig struct {
-	Name            string `json:"name"`
-	Query           string `json:"query"`
-	NotificationUrl string `json:"notificationUrl,omitempty"`
-	Disabled        bool   `json:"disabled,omitempty"`
-}
-
 func main() {
 	if err := initializeDirectories(); err != nil {
 		log.Fatalf("Failed to initialize directories: %v", err)
@@ -115,7 +92,7 @@ func createProcessedDir() string {
 	return processedDir
 }
 
-func connectToDatabase(config Config) *sql.DB {
+func connectToDatabase(config internal.Config) *sql.DB {
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.Database.Username, config.Database.Password, config.Database.Host, config.Database.Port, config.Database.Name))
 	if err != nil {
 		log.Fatal(err)
@@ -124,9 +101,9 @@ func connectToDatabase(config Config) *sql.DB {
 	return db
 }
 
-func sendInitialNotification(config Config) {
+func sendInitialNotification(config internal.Config) {
 	payload := strings.NewReader("Monitoring server started")
-	resp, err := http.Post(config.BaseNotificationUrl, "text/plain", payload)
+	resp, err := http.Post(config.BaseNotificationURL, "text/plain", payload)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,7 +114,7 @@ func sendInitialNotification(config Config) {
 	log.Print("Initial notification sent")
 }
 
-func runMonitoringLoop(db *sql.DB, config Config, processedDir string) {
+func runMonitoringLoop(db *sql.DB, config internal.Config, processedDir string) {
 	for {
 		for _, queryConfig := range config.Queries {
 			if !queryConfig.Disabled {
@@ -147,7 +124,7 @@ func runMonitoringLoop(db *sql.DB, config Config, processedDir string) {
 				}
 			}
 		}
-		time.Sleep(config.CheckIntervalMinutes * time.Minute)
+		time.Sleep(time.Duration(config.CheckIntervalMinutes) * time.Minute)
 	}
 }
 
@@ -169,8 +146,8 @@ func initializeDirectories() error {
 
 	configFilePath := filepath.Join(configDir, defaultConfigFileName)
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		defaultConfig := Config{
-			BaseNotificationUrl:  "https://ntfy.sh/base",
+		defaultConfig := internal.Config{
+			BaseNotificationURL:  "https://ntfy.sh/base",
 			NotificationMessage:  "New %d rows",
 			CheckIntervalMinutes: 1,
 		}
@@ -182,7 +159,7 @@ func initializeDirectories() error {
 	return nil
 }
 
-func writeConfig(config Config, filename string) error {
+func writeConfig(config internal.Config, filename string) error {
 	configData, err := json.MarshalIndent(config, "", "    ")
 	if err != nil {
 		return err
@@ -202,7 +179,7 @@ func getUserConfigDir() string {
 	return filepath.Join(homeDir, defaultConfigDir)
 }
 
-func monitorAndNotify(db *sql.DB, config Config, queryConfig QueryConfig, processedDir string) error {
+func monitorAndNotify(db *sql.DB, config internal.Config, queryConfig internal.QueryConfig, processedDir string) error {
 	processedIDs, err := readProcessedIDs(queryConfig.Name, processedDir)
 	if err != nil {
 		return err
@@ -250,12 +227,12 @@ func getNewRows(db *sql.DB, query string, processedIDs []int) ([]int, error) {
 	return newRows, nil
 }
 
-func sendNotifications(config Config, queryConfig QueryConfig, newRows []int) error {
+func sendNotifications(config internal.Config, queryConfig internal.QueryConfig, newRows []int) error {
 	var url string
-	if queryConfig.NotificationUrl != "" {
-		url = queryConfig.NotificationUrl
+	if queryConfig.NotificationURL != "" {
+		url = queryConfig.NotificationURL
 	} else {
-		url = config.BaseNotificationUrl
+		url = config.BaseNotificationURL
 	}
 
 	message := fmt.Sprintf(queryConfig.Name+": "+config.NotificationMessage, len(newRows))
@@ -275,8 +252,8 @@ func sendNotifications(config Config, queryConfig QueryConfig, newRows []int) er
 	return nil
 }
 
-func loadConfig(filename string) (Config, error) {
-	var config Config
+func loadConfig(filename string) (internal.Config, error) {
+	var config internal.Config
 	configFile, err := os.ReadFile(filename)
 	if err != nil {
 		return config, err
