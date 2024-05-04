@@ -13,6 +13,7 @@ Just check new rows by specified queries and send notification to [ntfy](https:/
 brew tap yendefrr/tap
 brew install sql-alerts
 ```
+or install from latest release
 
 ### Configuration
 
