@@ -2,21 +2,19 @@ module github.com/yendefrr/sql-alerts
 
 go 1.21.6
 
-require github.com/go-sql-driver/mysql v1.8.1
-
 require (
-	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/charmbracelet/bubbles v0.18.0 // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/charmbracelet/bubbles v0.18.0
+	github.com/go-sql-driver/mysql v1.8.1
 )
+
+require github.com/atotto/clipboard v0.1.4 // indirect
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/charmbracelet/bubbletea v0.26.0 // indirect
+	github.com/charmbracelet/bubbletea v0.26.0
 	github.com/charmbracelet/lipgloss v0.10.0
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
-	github.com/fogleman/ease v0.0.0-20170301025033-8da417bf1776
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
