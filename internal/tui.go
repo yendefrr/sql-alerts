@@ -26,13 +26,14 @@ var (
 )
 
 type model struct {
-	config   Config
-	cursor   int  // which to-do list item our cursor is pointing at
-	selected *int // which to-do items are selected
+	config     Config
+	cursor     int
+	selected   *int
+	topButtons []string
 
-	// new
-	inputs     []textinput.Model
-	focusIndex int
+	inputsQuery []textinput.Model
+	inputsDB    []textinput.Model
+	focusIndex  int
 }
 
 var filePath string
@@ -57,9 +58,9 @@ func checkConfig() tea.Msg {
 
 func InitialModel() model {
 	m := model{
-		// Our to-do list is a grocery list
-		selected: nil,
-		inputs:   make([]textinput.Model, 3),
+		selected:    nil,
+		topButtons:  []string{"Configure database", "Create new query\n"},
+		inputsQuery: make([]textinput.Model, 3),
 	}
 
 	m.SetInputs()
@@ -69,7 +70,7 @@ func InitialModel() model {
 
 func (m *model) SetInputs() {
 	var t textinput.Model
-	for i := range m.inputs {
+	for i := range m.inputsQuery {
 		t = textinput.New()
 		t.Cursor.Style = cursorStyle
 		t.CharLimit = 512
@@ -86,7 +87,7 @@ func (m *model) SetInputs() {
 			t.Placeholder = "URL"
 		}
 
-		m.inputs[i] = t
+		m.inputsQuery[i] = t
 	}
 }
 
@@ -114,6 +115,8 @@ func (m *model) handleInputsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c", "esc":
 		m.selected = nil
+		m.focusIndex = 0
+
 		return m, nil
 	case "tab", "shift+tab", "enter", "up", "down":
 		return m.navigateInputs(msg.String())
@@ -138,23 +141,22 @@ func (m model) handleConfigMenuKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) navigateInputs(s string) (tea.Model, tea.Cmd) {
-	if s == "enter" && m.focusIndex == len(m.inputs) {
-		if m.selected != nil && *m.selected > 0 {
-			// Update query
-			queryIndex := *m.selected - 1
+	if s == "enter" && m.focusIndex == len(m.inputsQuery) {
+		if m.selected != nil && *m.selected >= len(m.topButtons) {
+			queryIndex := *m.selected - len(m.topButtons)
 			newQuery := QueryConfig{
-				Name:            m.inputs[0].Value(),
-				Query:           m.inputs[1].Value(),
-				NotificationURL: m.inputs[2].Value(),
+				Name:            m.inputsQuery[0].Value(),
+				Query:           m.inputsQuery[1].Value(),
+				NotificationURL: m.inputsQuery[2].Value(),
 			}
 			m.config.UpdateQuery(queryIndex, newQuery)
 			m.config.SaveToFile(filePath)
 			m.SetInputs()
 		} else {
 			newQuery := QueryConfig{
-				Name:            m.inputs[0].Value(),
-				Query:           m.inputs[1].Value(),
-				NotificationURL: m.inputs[2].Value(),
+				Name:            m.inputsQuery[0].Value(),
+				Query:           m.inputsQuery[1].Value(),
+				NotificationURL: m.inputsQuery[2].Value(),
 			}
 			m.config.AddQuery(newQuery)
 			m.config.SaveToFile(filePath)
@@ -174,33 +176,33 @@ func (m model) navigateInputs(s string) (tea.Model, tea.Cmd) {
 		m.focusIndex++
 	}
 
-	if m.focusIndex > len(m.inputs) {
+	if m.focusIndex > len(m.inputsQuery) {
 		m.focusIndex = 0
 	} else if m.focusIndex < 0 {
-		m.focusIndex = len(m.inputs)
+		m.focusIndex = len(m.inputsQuery)
 	}
 
-	cmds := make([]tea.Cmd, len(m.inputs))
-	for i := 0; i <= len(m.inputs)-1; i++ {
+	cmds := make([]tea.Cmd, len(m.inputsQuery))
+	for i := 0; i <= len(m.inputsQuery)-1; i++ {
 		if i == m.focusIndex {
 			// Set focused state
-			cmds[i] = m.inputs[i].Focus()
-			m.inputs[i].PromptStyle = focusedStyle
-			m.inputs[i].TextStyle = focusedStyle
+			cmds[i] = m.inputsQuery[i].Focus()
+			m.inputsQuery[i].PromptStyle = focusedStyle
+			m.inputsQuery[i].TextStyle = focusedStyle
 			continue
 		}
 		// Remove focused state
-		m.inputs[i].Blur()
-		m.inputs[i].PromptStyle = noStyle
-		m.inputs[i].TextStyle = noStyle
+		m.inputsQuery[i].Blur()
+		m.inputsQuery[i].PromptStyle = noStyle
+		m.inputsQuery[i].TextStyle = noStyle
 	}
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m model) deleteQuery() (tea.Model, tea.Cmd) {
-	if m.cursor > 0 {
-		m.config.DeleteQueryByIndex(m.cursor - 1)
+	if m.cursor >= len(m.topButtons) {
+		m.config.DeleteQueryByIndex(m.cursor - len(m.topButtons))
 		m.config.SaveToFile(filePath)
 
 		m.cursor = m.cursor - 1
@@ -212,51 +214,65 @@ func (m model) deleteQuery() (tea.Model, tea.Cmd) {
 func (m model) moveCursorUp() (tea.Model, tea.Cmd) {
 	if m.cursor > 0 {
 		m.cursor--
+	} else {
+		m.cursor = len(m.config.GetQueryNames()) + len(m.topButtons) - 1
 	}
 
 	return m, nil
 }
 
 func (m model) moveCursorDown() (tea.Model, tea.Cmd) {
-	if m.cursor < len(m.config.GetQueryNames())-1 {
+	if m.cursor < len(m.config.GetQueryNames())+len(m.topButtons)-1 {
 		m.cursor++
+	} else {
+		m.cursor = 0
 	}
 
 	return m, nil
 }
 
 func (m *model) toggleSelected() (tea.Model, tea.Cmd) {
-	if m.cursor == 0 {
+	if m.cursor < len(m.topButtons) {
 		m.selected = &m.cursor
+		clearInputs(m.inputsQuery)
 	} else {
-		selectedIndex := m.cursor - 1
 		m.selected = &m.cursor
-
-		if selectedIndex >= 0 && selectedIndex < len(m.config.Queries) {
-			query := m.config.Queries[selectedIndex]
-			for i, input := range m.inputs {
-				switch i {
-				case 0:
-					input.SetValue(query.Name)
-				case 1:
-					input.SetValue(query.Query)
-				case 2:
-					input.SetValue(query.NotificationURL)
-				}
-				m.inputs[i] = input
-			}
-		}
+		setInputsFromQuery(&m.config, m.inputsQuery, m.cursor, len(m.topButtons))
 	}
 	return m, nil
 }
 
+func clearInputs(inputs []textinput.Model) {
+	for i := range inputs {
+		inputs[i].SetValue("")
+	}
+}
+
+func setInputsFromQuery(config *Config, inputs []textinput.Model, cursor, topButtonLen int) {
+	selectedIndex := cursor - topButtonLen
+	if selectedIndex >= 0 && selectedIndex < len(config.Queries)+topButtonLen {
+		query := config.Queries[selectedIndex]
+		for i, input := range inputs {
+			switch i {
+			case 0:
+				input.SetValue(query.Name)
+			case 1:
+				input.SetValue(query.Query)
+			case 2:
+				input.SetValue(query.NotificationURL)
+			}
+			inputs[i] = input
+		}
+	}
+}
+
 func (m *model) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(m.inputs))
+	cmds := make([]tea.Cmd, len(m.inputsQuery))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
 	// update all of them here without any further logic.
-	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+	for i := range m.inputsQuery {
+		m.inputsQuery[i], cmds[i] = m.inputsQuery[i].Update(msg)
 	}
 
 	return tea.Batch(cmds...)
@@ -277,39 +293,67 @@ func (m model) shouldShowInputsView() bool {
 func (m model) renderInputsView() string {
 	var b strings.Builder
 
-	for i := range m.inputs {
-		b.WriteString(m.inputs[i].View())
-		if i < len(m.inputs)-1 {
-			b.WriteRune('\n')
-		}
+	if *m.selected >= len(m.topButtons) {
+		renderInputs(&b, m.inputsQuery)
+	}
+	if *m.selected < len(m.topButtons) {
+		renderAndResetInputs(&b, m.inputsQuery)
 	}
 
-	button := &blurredButton
-	if m.focusIndex == len(m.inputs) {
-		button = &focusedButton
-	}
-	fmt.Fprintf(&b, "\n\n%s\n\n%s\n", *button, helpStyle.Render("[enter] - submit; [esc] - go back;"))
+	renderButton(&b, m.focusIndex == len(m.inputsQuery))
 
 	return b.String()
 }
 
-func (m model) renderConfigMenuView() string {
-	s := lipgloss.NewStyle().Blink(true).Foreground(lipgloss.Color("#A4F4D7")).Render("SQL Alerts configuration menu") + "\n\n"
+func renderInputs(b *strings.Builder, inputs []textinput.Model) {
+	for i, input := range inputs {
+		b.WriteString(input.View())
+		if i < len(inputs)-1 {
+			b.WriteRune('\n')
+		}
+	}
+}
 
-	for i, choice := range m.config.GetQueryNames() {
-		cursor := " "
+func renderAndResetInputs(b *strings.Builder, inputs []textinput.Model) {
+	for i, input := range inputs {
+		b.WriteString(input.View())
+		if i < len(inputs)-1 {
+			b.WriteRune('\n')
+		}
+	}
+}
+
+func renderButton(b *strings.Builder, isFocused bool) {
+	button := &blurredButton
+	if isFocused {
+		button = &focusedButton
+	}
+	fmt.Fprintf(b, "\n\n%s\n\n%s\n", *button, helpStyle.Render("[enter] - submit; [esc] - go back;"))
+}
+
+func (m model) renderConfigMenuView() string {
+	s := lipgloss.NewStyle().Foreground(lipgloss.Color("#A4F4D7")).Render("SQL Alerts configuration menu") + "\n\n"
+
+	var cursor string
+	for i, button := range m.topButtons {
+		cursor = " "
 		if m.cursor == i {
 			cursor = ">"
-			if i == 0 {
-				choice = lipgloss.NewStyle().Blink(true).Foreground(lipgloss.Color(blueColor)).Render(choice)
-			} else {
-				choice = lipgloss.NewStyle().Blink(true).Foreground(lipgloss.Color(yellowColor)).Render(choice)
-			}
+			lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(button)
 		}
-		s += fmt.Sprintf("%s %s\n", lipgloss.NewStyle().Blink(true).Foreground(lipgloss.Color(blueColor)).Render(cursor), choice)
+		s += fmt.Sprintf("%s %s\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), button)
 	}
 
-	if m.cursor == 0 {
+	for i, choice := range m.config.GetQueryNames() {
+		cursor = " "
+		if m.cursor == i+len(m.topButtons) {
+			cursor = ">"
+			choice = lipgloss.NewStyle().Foreground(lipgloss.Color(yellowColor)).Render(choice)
+		}
+		s += fmt.Sprintf("%s %s\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), choice)
+	}
+
+	if m.cursor < len(m.topButtons) {
 		s += helpStyle.Render("\n\n[enter] - open; [q] - quit;\n")
 	} else {
 		s += helpStyle.Render("\n\n[enter] - edit; [x] - delete; [q] - quit;\n")

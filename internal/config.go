@@ -81,7 +81,6 @@ func (c *Config) LoadFromFile(filename string) error {
 func (c *Config) GetQueryNames() []string {
 	var names []string
 
-	names = append(names, "Create new query\n")
 	for _, query := range c.Queries {
 		names = append(names, query.Name)
 	}
