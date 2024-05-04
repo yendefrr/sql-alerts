@@ -1,3 +1,13 @@
+## 1.0.1 (2024-05-04)
+
+### Fix
+
+- **config**: open config menu on first run
+
+### Refactor
+
+- **tui**: puts button in different field, optimized code
+
 ## 1.0.0 (2024-05-04)
 
 ### Feat
