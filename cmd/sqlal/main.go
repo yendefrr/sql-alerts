@@ -46,6 +46,14 @@ func main() {
 		return
 	}
 
+	homeDir, _ := os.UserHomeDir()
+	configFilePath := filepath.Join(homeDir, defaultConfigDir, defaultConfigFileName)
+	fmt.Println(configFilePath)
+	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+		config()
+		return
+	}
+
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "start":
@@ -55,12 +63,8 @@ func main() {
 			stop()
 			return
 		case "config":
-			p := tea.NewProgram(internal.InitialModel(), tea.WithAltScreen())
-			if _, err := p.Run(); err != nil {
-				fmt.Printf("Alas, there's been an error: %v", err)
-				os.Exit(1)
-			}
-			os.Exit(0)
+			config()
+			return
 		}
 	}
 
@@ -124,7 +128,7 @@ func runMonitoringLoop(db *sql.DB, config internal.Config, processedDir string) 
 				}
 			}
 		}
-		time.Sleep(time.Duration(config.CheckIntervalMinutes) * time.Minute)
+		time.Sleep(time.Duration(config.CheckIntervalSeconds) * time.Second)
 	}
 }
 
@@ -142,18 +146,6 @@ func initializeDirectories() error {
 	processedDir := filepath.Join(configDir, "processed")
 	if err := os.MkdirAll(processedDir, 0755); err != nil {
 		return err
-	}
-
-	configFilePath := filepath.Join(configDir, defaultConfigFileName)
-	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		defaultConfig := internal.Config{
-			BaseNotificationURL:  "https://ntfy.sh/base",
-			NotificationMessage:  "New %d rows",
-			CheckIntervalMinutes: 1,
-		}
-		if err := writeConfig(defaultConfig, configFilePath); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -333,4 +325,13 @@ func stop() {
 	}
 	fmt.Println(string(out))
 	fmt.Println("sqlal stopped.")
+}
+
+func config() {
+	p := tea.NewProgram(internal.InitialModel(), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Alas, there's been an error: %v", err)
+		os.Exit(1)
+	}
+	os.Exit(0)
 }

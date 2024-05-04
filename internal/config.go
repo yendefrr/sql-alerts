@@ -10,7 +10,7 @@ type Config struct {
 	Queries              []QueryConfig  `json:"queries"`
 	BaseNotificationURL  string         `json:"baseNotificationUrl"`
 	NotificationMessage  string         `json:"notificationMessage"`
-	CheckIntervalMinutes int            `json:"checkIntervalMinutes"`
+	CheckIntervalSeconds int            `json:"checkIntervalSeconds"`
 }
 
 type DatabaseConfig struct {
@@ -39,14 +39,14 @@ func NewDefaultConfig() Config {
 		},
 		Queries: []QueryConfig{
 			{
-				Name:            "",
+				Name:            "Query 1",
 				Query:           "SELECT id FROM table",
 				NotificationURL: "https://ntfy.sh/sqlal",
 			},
 		},
 		BaseNotificationURL:  "https://ntfy.sh/sqlal",
 		NotificationMessage:  "New %d rows",
-		CheckIntervalMinutes: 1,
+		CheckIntervalSeconds: 60,
 	}
 }
 
