@@ -15,9 +15,11 @@ go install github.com/yendefrr/sql-alerts@latest
 
 ### Configuration
 
-Edit `.config/sqlal/config.json` or run `sqlal config`
+```bash
+sqlal config # or edit `.config/sqlal/config.json
+```
 
-All queries must be `SELECT` type and query only one column that should be unique ID
+All queries must be `SELECT` type and query only one column that should be unique `ID`
 
 For disable query provide `"disabled": true` parameter
 
@@ -26,8 +28,11 @@ For disable query provide `"disabled": true` parameter
 After configuration run
 
 ```bash
+sqlal start
+```
+or
+```bash
 sqlal start --config <path-to-config> 
-sqlal start # or edit .config/sqlal/config.json and run it
 ```
 
 To stop service
@@ -38,4 +43,6 @@ sqlal stop
 ### TODO
 
 - [ ] Other SQL drivers
+- [ ] DB configuration
+- [ ] Validation
 - [x] Run in background
