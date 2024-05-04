@@ -6,6 +6,13 @@ Fow now it's just check new rows by specified queries and send notification by [
 
 Support MySQL only
 
+In active development but almost ready for daily usage
+
+### Installation
+```bash
+go install github.com/yendefrr/sql-alerts@latest
+```
+
 ### Configuration
 
 Edit `.config/sqlal/config.json` or run `sqlal config`
@@ -13,11 +20,6 @@ Edit `.config/sqlal/config.json` or run `sqlal config`
 All queries must be `SELECT` type and query only one column that should be unique ID
 
 For disable query provide `"disabled": true` parameter
-
-### Installation
-```bash
-go install github.com/yendefrr/sql-alerts@latest
-```
 
 ### Usage
 
