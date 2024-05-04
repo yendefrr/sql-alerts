@@ -16,6 +16,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/yendefrr/sql-alerts/internal"
 )
 
@@ -150,7 +151,6 @@ func runMonitoringLoop(db *sql.DB, config Config, processedDir string) {
 	}
 }
 
-// Helper function to initialize default directories and config file
 func initializeDirectories() error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -169,7 +169,6 @@ func initializeDirectories() error {
 
 	configFilePath := filepath.Join(configDir, defaultConfigFileName)
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		// Config file doesn't exist, create default config
 		defaultConfig := Config{
 			BaseNotificationUrl:  "https://ntfy.sh/base",
 			NotificationMessage:  "New %d rows",
@@ -183,7 +182,6 @@ func initializeDirectories() error {
 	return nil
 }
 
-// Helper function to write default config to file
 func writeConfig(config Config, filename string) error {
 	configData, err := json.MarshalIndent(config, "", "    ")
 	if err != nil {
@@ -192,12 +190,10 @@ func writeConfig(config Config, filename string) error {
 	return os.WriteFile(filename, configData, 0644)
 }
 
-// Helper function to get the default configuration file path
 func getDefaultConfigFilePath() string {
 	return filepath.Join(getUserConfigDir(), defaultConfigFileName)
 }
 
-// Helper function to get the user's configuration directory
 func getUserConfigDir() string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -207,26 +203,22 @@ func getUserConfigDir() string {
 }
 
 func monitorAndNotify(db *sql.DB, config Config, queryConfig QueryConfig, processedDir string) error {
-	// Read processed IDs from the file
 	processedIDs, err := readProcessedIDs(queryConfig.Name, processedDir)
 	if err != nil {
 		return err
 	}
 
-	// Get new rows from the database
 	newRows, err := getNewRows(db, queryConfig.Query, processedIDs)
 	if err != nil {
 		return err
 	}
 
-	// Send notifications for new rows
 	if len(newRows) > 0 {
 		err := sendNotifications(config, queryConfig, newRows)
 		if err != nil {
 			return err
 		}
 
-		// Update processedIDs with new rows
 		processedIDs = append(processedIDs, newRows...)
 		err = writeProcessedIDs(queryConfig.Name, processedIDs, processedDir)
 		if err != nil {

@@ -25,6 +25,7 @@ type QueryConfig struct {
 	Name            string `json:"name"`
 	Query           string `json:"query"`
 	NotificationURL string `json:"notificationUrl"`
+	Disabled        bool   `json:"disabled,omitempty"`
 }
 
 func NewDefaultConfig() Config {
@@ -80,7 +81,7 @@ func (c *Config) LoadFromFile(filename string) error {
 func (c *Config) GetQueryNames() []string {
 	var names []string
 
-	names = append(names, "Create new\n")
+	names = append(names, "Create new query\n")
 	for _, query := range c.Queries {
 		names = append(names, query.Name)
 	}
@@ -92,8 +93,8 @@ func (c *Config) AddQuery(newQuery QueryConfig) {
 }
 
 func (c *Config) DeleteQueryByIndex(index int) {
-    if index < 0 || index >= len(c.Queries) {
-        return // index out of range
-    }
-    c.Queries = append(c.Queries[:index], c.Queries[index+1:]...)
+	if index < 0 || index >= len(c.Queries) {
+		return // index out of range
+	}
+	c.Queries = append(c.Queries[:index], c.Queries[index+1:]...)
 }
