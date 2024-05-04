@@ -9,14 +9,14 @@ before:
 
 builds:
   - id: linux
-    main: .
+    main: ./cmd/sqlal
     goos:
       - linux
     env:
       - CGO_ENABLED=0
 
   - id: darwin
-    main: .
+    main: ./cmd/sqlal
     goos:
       - darwin
     env:
