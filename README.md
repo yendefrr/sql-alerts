@@ -8,7 +8,7 @@ Support MySQL only
 
 ### Configuration
 
-Edit `.config/sqlal/config.json`
+Edit `.config/sqlal/config.json` or run `sqlal config`
 
 All queries must be `SELECT` type and query only one column that should be unique ID
 
@@ -16,7 +16,7 @@ For disable query provide `"disabled": true` parameter
 
 ### Installation
 ```bash
-go install github.com/yendefrr/sql-alerts@v0.4.8
+go install github.com/yendefrr/sql-alerts@latest
 ```
 
 ### Usage
