@@ -12,10 +12,11 @@ import (
 
 var blueColor = "#A4D6F4"
 var yellowColor = "#F0D7AE"
+var grayColor = "#737373"
 
 var (
 	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor))
-	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(grayColor))
 	cursorStyle  = focusedStyle.Copy()
 	noStyle      = lipgloss.NewStyle()
 	helpStyle    = blurredStyle.Copy()
@@ -71,7 +72,7 @@ func (m *model) SetInputs() {
 	for i := range m.inputs {
 		t = textinput.New()
 		t.Cursor.Style = cursorStyle
-		t.CharLimit = 32
+		t.CharLimit = 512
 
 		switch i {
 		case 0:
@@ -99,7 +100,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.config = Config(msg)
 		return m, nil
 	case tea.KeyMsg:
-		if m.selected != nil && *m.selected == 0 {
+		if m.selected != nil {
 			return m.handleInputsKey(msg)
 		} else {
 			return m.handleConfigMenuKey(msg)
@@ -138,15 +139,31 @@ func (m model) handleConfigMenuKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m model) navigateInputs(s string) (tea.Model, tea.Cmd) {
 	if s == "enter" && m.focusIndex == len(m.inputs) {
-		m.selected = nil
-		newQuery := QueryConfig{
-			Name:            m.inputs[0].Value(),
-			Query:           m.inputs[1].Value(),
-			NotificationURL: m.inputs[2].Value(),
+		if m.selected != nil && *m.selected > 0 {
+			// Update query
+			queryIndex := *m.selected - 1
+			newQuery := QueryConfig{
+				Name:            m.inputs[0].Value(),
+				Query:           m.inputs[1].Value(),
+				NotificationURL: m.inputs[2].Value(),
+			}
+			m.config.UpdateQuery(queryIndex, newQuery)
+			m.config.SaveToFile(filePath)
+			m.SetInputs()
+		} else {
+			newQuery := QueryConfig{
+				Name:            m.inputs[0].Value(),
+				Query:           m.inputs[1].Value(),
+				NotificationURL: m.inputs[2].Value(),
+			}
+			m.config.AddQuery(newQuery)
+			m.config.SaveToFile(filePath)
+			m.SetInputs()
 		}
-		m.config.AddQuery(newQuery)
-		m.config.SaveToFile(filePath)
-		m.SetInputs()
+
+		m.selected = nil
+		m.focusIndex = 0
+
 		return m, nil
 	}
 
@@ -208,9 +225,28 @@ func (m model) moveCursorDown() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) toggleSelected() (tea.Model, tea.Cmd) {
-	m.selected = &m.cursor
+func (m *model) toggleSelected() (tea.Model, tea.Cmd) {
+	if m.cursor == 0 {
+		m.selected = &m.cursor
+	} else {
+		selectedIndex := m.cursor - 1
+		m.selected = &m.cursor
 
+		if selectedIndex >= 0 && selectedIndex < len(m.config.Queries) {
+			query := m.config.Queries[selectedIndex]
+			for i, input := range m.inputs {
+				switch i {
+				case 0:
+					input.SetValue(query.Name)
+				case 1:
+					input.SetValue(query.Query)
+				case 2:
+					input.SetValue(query.NotificationURL)
+				}
+				m.inputs[i] = input
+			}
+		}
+	}
 	return m, nil
 }
 
@@ -235,7 +271,7 @@ func (m model) View() string {
 }
 
 func (m model) shouldShowInputsView() bool {
-	return m.selected != nil && *m.selected == 0
+	return m.selected != nil
 }
 
 func (m model) renderInputsView() string {

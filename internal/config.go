@@ -92,6 +92,13 @@ func (c *Config) AddQuery(newQuery QueryConfig) {
 	c.Queries = append(c.Queries, newQuery)
 }
 
+func (c *Config) UpdateQuery(index int, newQuery QueryConfig) {
+	if index < 0 || index >= len(c.Queries) {
+		return // index out of range
+	}
+	c.Queries[index] = newQuery
+}
+
 func (c *Config) DeleteQueryByIndex(index int) {
 	if index < 0 || index >= len(c.Queries) {
 		return // index out of range
