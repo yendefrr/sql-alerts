@@ -1,3 +1,9 @@
+## 1.1.0 (2024-05-04)
+
+### Feat
+
+- **tui**: added textarea view for sql input
+
 ## 1.0.1 (2024-05-04)
 
 ### Fix
