@@ -2,11 +2,11 @@
 
 ### About
 
-Fow now it's just check new rows by specified queries and send notification by [ntfy](https://ntfy.sh/)
+Just check new rows by specified queries and send notification to [ntfy](https://ntfy.sh/)
 
-Support MySQL only
+**Now support MySQL only**
 
-In active development but almost ready for daily usage
+**In active development but almost ready for daily usage**
 
 ### Installation
 ```bash
