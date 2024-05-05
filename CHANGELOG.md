@@ -1,3 +1,9 @@
+## 1.8.1 (2024-05-06)
+
+### Fix
+
+- **main**: added restart command and prevent repeat commands
+
 ## 1.8.0 (2024-05-06)
 
 ### Feat
