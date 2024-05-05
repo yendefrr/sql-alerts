@@ -25,7 +25,7 @@ type QueryConfig struct {
 	Name            string `json:"name"`
 	Query           string `json:"query"`
 	NotificationURL string `json:"notificationUrl"`
-	Disabled        bool   `json:"disabled,omitempty"`
+	Disabled        bool   `json:"disabled"`
 }
 
 func NewDefaultConfig() Config {
@@ -42,6 +42,7 @@ func NewDefaultConfig() Config {
 				Name:            "Query 1",
 				Query:           "SELECT id FROM table",
 				NotificationURL: "https://ntfy.sh/sqlal",
+				Disabled:        false,
 			},
 		},
 		BaseNotificationURL:  "https://ntfy.sh/sqlal",

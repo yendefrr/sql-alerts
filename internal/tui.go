@@ -228,12 +228,21 @@ func (m model) handleConfigMenuKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m model) navigateInputsQuery(s string) (tea.Model, tea.Cmd) {
 	if s == "enter" && m.focusIndex == len(m.inputsQuery)+1 {
+		var disabled bool
+		if m.inputsQuery[2].Value() == "y" {
+			disabled = true
+		}
+		if m.inputsQuery[2].Value() == "n" {
+			disabled = false
+		}
 		if m.selected != nil && *m.selected >= len(m.topButtons) {
 			queryIndex := *m.selected - len(m.topButtons)
+
 			newQuery := QueryConfig{
 				Name:            m.inputsQuery[0].Value(),
 				NotificationURL: m.inputsQuery[1].Value(),
 				Query:           m.inputTextQuery.Value(),
+				Disabled:        disabled,
 			}
 			m.config.UpdateQuery(queryIndex, newQuery)
 			m.config.SaveToFile(filePath)
@@ -243,6 +252,7 @@ func (m model) navigateInputsQuery(s string) (tea.Model, tea.Cmd) {
 				Name:            m.inputsQuery[0].Value(),
 				NotificationURL: m.inputsQuery[1].Value(),
 				Query:           m.inputTextQuery.Value(),
+				Disabled:        disabled,
 			}
 			m.config.AddQuery(newQuery)
 			m.config.SaveToFile(filePath)
@@ -459,7 +469,14 @@ func setInputsFromQuery(config *Config, inputs []textinput.Model, inputText *tex
 				input.SetValue(query.Name)
 			case 1:
 				input.SetValue(query.NotificationURL)
+			case 2:
+				if query.Disabled {
+					input.SetValue("y")
+				} else {
+					input.SetValue("n")
+				}
 			}
+
 			inputs[i] = input
 		}
 		inputText.SetValue(query.Query)
