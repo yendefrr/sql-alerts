@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/fatih/color"
 )
 
 var blueColor = "#A4D6F4"
@@ -641,13 +642,15 @@ func (m model) renderConfigMenuView() string {
 
 	s += "  💾 Your queries:\n\n"
 
-	for i, choice := range m.config.GetQueryNames() {
+	var choice string
+	for i, query := range m.config.Queries {
 		cursor = " "
+		choice = query.Name
 		if m.cursor == i+len(m.topButtons) {
 			cursor = ">"
 			choice = lipgloss.NewStyle().Foreground(lipgloss.Color(yellowColor)).Render(choice)
 		}
-		s += fmt.Sprintf("%s %s\n\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), choice)
+		s += fmt.Sprintf("%s %s\n  %s\n\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), choice, highlightSQL(strings.Replace(query.Query, "\n", " ", -1)))
 	}
 
 	if m.delete {
@@ -661,4 +664,36 @@ func (m model) renderConfigMenuView() string {
 	}
 
 	return s
+}
+
+func highlightSQL(query string) string {
+	keywords := []string{"SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "IN", "LIKE", "ORDER BY", "GROUP BY", "HAVING", "LIMIT"}
+
+	colors := map[string]func(...interface{}) string{
+		"SELECT":   color.New(color.FgCyan).SprintFunc(),
+		"FROM":     color.New(color.FgCyan).SprintFunc(),
+		"WHERE":    color.New(color.FgCyan).SprintFunc(),
+		"AND":      color.New(color.FgCyan).SprintFunc(),
+		"OR":       color.New(color.FgCyan).SprintFunc(),
+		"NOT":      color.New(color.FgCyan).SprintFunc(),
+		"IN":       color.New(color.FgCyan).SprintFunc(),
+		"LIKE":     color.New(color.FgCyan).SprintFunc(),
+		"ORDER BY": color.New(color.FgCyan).SprintFunc(),
+		"GROUP BY": color.New(color.FgCyan).SprintFunc(),
+		"HAVING":   color.New(color.FgCyan).SprintFunc(),
+		"LIMIT":    color.New(color.FgCyan).SprintFunc(),
+	}
+
+	words := strings.Fields(query)
+
+	for i, word := range words {
+		for _, keyword := range keywords {
+			if strings.EqualFold(word, keyword) {
+				words[i] = colors[keyword](word)
+				break
+			}
+		}
+	}
+
+	return strings.Join(words, " ")
 }
