@@ -1,3 +1,9 @@
+## 1.5.0 (2024-05-05)
+
+### Feat
+
+- **config**: prefilled database configuration
+
 ## 1.4.0 (2024-05-05)
 
 ### Feat
