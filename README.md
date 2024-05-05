@@ -6,8 +6,6 @@ Just check new rows by specified queries and send notification to [ntfy](https:/
 
 **Now support MySQL only**
 
-**In active development but almost ready for daily usage**
-
 ### Installation
 ```bash
 brew tap yendefrr/tap
