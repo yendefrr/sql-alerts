@@ -38,9 +38,11 @@ type model struct {
 	inputsQuery    []textinput.Model
 	inputTextQuery textarea.Model
 	focusIndex     int
+	delete         bool
 }
 
 var filePath string
+var confirm bool
 
 func checkConfig() tea.Msg {
 	root, _ := os.UserHomeDir()
@@ -149,7 +151,7 @@ func (m *model) SetInputs() {
 }
 
 func (m model) Init() tea.Cmd {
-	return checkConfig
+	return tea.Batch(checkConfig)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -216,6 +218,12 @@ func (m model) handleConfigMenuKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "x":
 		return m.deleteQuery()
+	case "y":
+		confirm = true
+		return m.deleteQuery()
+	case "n":
+		confirm = false
+		m.delete = false
 	case "up", "k":
 		return m.moveCursorUp()
 	case "down", "j":
@@ -405,10 +413,16 @@ func (m model) navigateInputsSettings(s string) (tea.Model, tea.Cmd) {
 
 func (m model) deleteQuery() (tea.Model, tea.Cmd) {
 	if m.cursor >= len(m.topButtons) {
+		if !confirm {
+			m.delete = true
+			return m, nil
+		}
 		m.config.DeleteQueryByIndex(m.cursor - len(m.topButtons))
 		m.config.SaveToFile(filePath)
 
 		m.cursor = m.cursor - 1
+		m.delete = false
+		confirm = false
 	}
 
 	return m, nil
@@ -631,6 +645,10 @@ func (m model) renderConfigMenuView() string {
 			choice = lipgloss.NewStyle().Foreground(lipgloss.Color(yellowColor)).Render(choice)
 		}
 		s += fmt.Sprintf("%s %s\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), choice)
+	}
+
+	if m.delete {
+		s += focusedStyle.Render("\nAre you sure? [y/n]")
 	}
 
 	if m.cursor < len(m.topButtons) {
