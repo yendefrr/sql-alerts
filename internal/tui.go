@@ -19,6 +19,7 @@ var grayColor = "#737373"
 var (
 	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor))
 	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(grayColor))
+	defaultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#C7C7C8"))
 	cursorStyle  = focusedStyle.Copy()
 	noStyle      = lipgloss.NewStyle()
 	helpStyle    = blurredStyle.Copy()
@@ -66,7 +67,7 @@ func InitialModel() model {
 	m := model{
 		selected:       nil,
 		focusIndex:     0,
-		topButtons:     []string{"Configure settings", "Configure database", "Create new query\n"},
+		topButtons:     []string{"⚙️  Configure settings", "🗄️  Configure database", "🆕 Create new query\n"},
 		inputsSettings: make([]textinput.Model, 3),
 		inputsDB:       make([]textinput.Model, 5),
 		inputsQuery:    make([]textinput.Model, 3),
@@ -626,17 +627,19 @@ func renderButton(b *strings.Builder, isFocused bool) {
 }
 
 func (m model) renderConfigMenuView() string {
-	s := lipgloss.NewStyle().Foreground(lipgloss.Color("#A4F4D7")).Render("SQL Alerts configuration menu") + "\n\n"
+	s := lipgloss.NewStyle().Foreground(lipgloss.Color("#A4F4D7")).Render("SQL Alerts configuration menu") + "\n\n\n"
 
 	var cursor string
 	for i, button := range m.topButtons {
 		cursor = " "
 		if m.cursor == i {
 			cursor = ">"
-			lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(button)
+			button = lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(button)
 		}
-		s += fmt.Sprintf("%s %s\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), button)
+		s += fmt.Sprintf("%s %s\n\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), button)
 	}
+
+	s += "  💾 Your queries:\n\n"
 
 	for i, choice := range m.config.GetQueryNames() {
 		cursor = " "
@@ -644,17 +647,17 @@ func (m model) renderConfigMenuView() string {
 			cursor = ">"
 			choice = lipgloss.NewStyle().Foreground(lipgloss.Color(yellowColor)).Render(choice)
 		}
-		s += fmt.Sprintf("%s %s\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), choice)
+		s += fmt.Sprintf("%s %s\n\n", lipgloss.NewStyle().Foreground(lipgloss.Color(blueColor)).Render(cursor), choice)
 	}
 
 	if m.delete {
-		s += focusedStyle.Render("\nAre you sure? [y/n]")
+		s += focusedStyle.Render("\nAre you sure? [y/n]\n\n")
 	}
 
 	if m.cursor < len(m.topButtons) {
-		s += helpStyle.Render("\n\n[enter] - open; [q] - quit;\n")
+		s += helpStyle.Render("\n[enter] - open; [q] - quit;\n")
 	} else {
-		s += helpStyle.Render("\n\n[enter] - edit; [x] - delete; [q] - quit;\n")
+		s += helpStyle.Render("\n[enter] - edit; [x] - delete; [q] - quit;\n")
 	}
 
 	return s
