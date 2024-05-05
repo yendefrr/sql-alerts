@@ -1,6 +1,6 @@
 # SQL New rows monitoring
 
-<img width="1266" alt="Arc-CRM@2x" src="https://github.com/yendefrr/sql-alerts/assets/91500932/785f5502-c2ed-453c-a55f-506beb220875">
+<img width="1420" alt="sqlal" src="https://github.com/yendefrr/sql-alerts/assets/91500932/a614715d-74d5-411d-b152-7da2cad7b950">
 
 ### About
 
