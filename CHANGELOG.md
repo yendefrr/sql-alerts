@@ -1,3 +1,9 @@
+## 1.6.0 (2024-05-05)
+
+### Feat
+
+- **config**: added base settings configuration
+
 ## 1.5.0 (2024-05-05)
 
 ### Feat
