@@ -43,6 +43,6 @@ sqlal stop
 ### TODO
 
 - [ ] Other SQL drivers
-- [ ] DB configuration
+- [x] DB configuration
 - [ ] Validation
 - [x] Run in background
