@@ -159,7 +159,7 @@ func (m *model) handleInputsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.navigateInputsQuery(msg.String())
 		}
 	case "up", "down", "enter":
-		if *m.selected == 0 && m.focusIndex != len(m.inputsDB) {
+		if *m.selected == 0 {
 			return m.navigateInputsDB(msg.String())
 		}
 		if *m.selected > 0 && m.focusIndex != len(m.inputsQuery) {
@@ -340,10 +340,14 @@ func (m model) moveCursorDown() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) toggleSelected() (tea.Model, tea.Cmd) {
-	if m.cursor < len(m.topButtons) {
+	switch m.cursor {
+	case 0:
+		m.selected = &m.cursor
+		setInputsFromDB(&m.config, m.inputsDB)
+	case 1:
 		m.selected = &m.cursor
 		clearInputs(m.inputsQuery, &m.inputTextQuery)
-	} else {
+	default:
 		m.selected = &m.cursor
 		setInputsFromQuery(&m.config, m.inputsQuery, &m.inputTextQuery, m.cursor, len(m.topButtons))
 	}
@@ -371,6 +375,24 @@ func setInputsFromQuery(config *Config, inputs []textinput.Model, inputText *tex
 			inputs[i] = input
 		}
 		inputText.SetValue(query.Query)
+	}
+}
+
+func setInputsFromDB(config *Config, inputs []textinput.Model) {
+	for i, input := range inputs {
+		switch i {
+		case 0:
+			input.SetValue(config.Database.Username)
+		case 1:
+			input.SetValue(config.Database.Password)
+		case 2:
+			input.SetValue(config.Database.Host)
+		case 3:
+			input.SetValue(config.Database.Port)
+		case 4:
+			input.SetValue(config.Database.Name)
+		}
+		inputs[i] = input
 	}
 }
 
