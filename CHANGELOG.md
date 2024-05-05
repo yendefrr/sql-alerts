@@ -1,3 +1,13 @@
+## 1.7.0 (2024-05-05)
+
+### Feat
+
+- **queries**: delete confirmation
+
+### Fix
+
+- **tui**: updated layout
+
 ## 1.6.2 (2024-05-05)
 
 ### Fix
