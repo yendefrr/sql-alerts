@@ -1,3 +1,9 @@
+## 1.6.2 (2024-05-05)
+
+### Fix
+
+- **config**: enable disabled field
+
 ## 1.6.1 (2024-05-05)
 
 ### Fix
