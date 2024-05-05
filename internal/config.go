@@ -104,3 +104,7 @@ func (c *Config) DeleteQueryByIndex(index int) {
 	}
 	c.Queries = append(c.Queries[:index], c.Queries[index+1:]...)
 }
+
+func (c *Config) UpdateDB(newDB DatabaseConfig) {
+	c.Database = newDB
+}
