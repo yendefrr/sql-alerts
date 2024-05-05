@@ -1,5 +1,7 @@
 # SQL New rows monitoring
 
+<img width="1266" alt="Arc-CRM@2x" src="https://github.com/yendefrr/sql-alerts/assets/91500932/785f5502-c2ed-453c-a55f-506beb220875">
+
 ### About
 
 Just check new rows by specified queries and send notification to [ntfy](https://ntfy.sh/)
