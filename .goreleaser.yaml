@@ -39,3 +39,18 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+brews:
+  - repository:
+      owner: "yendefrr"
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: "yendefrr"
+      email: "github@yendefr.xyz"
+    homepage: "https://github.com/yendefrr/sql-alerts"
+    description: "Get notifications about new rows in your database"
+    dependencies:
+      - name: go
+    install: |-
+      bin.install "sql-alerts" => "sqlal"

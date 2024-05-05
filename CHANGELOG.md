@@ -1,3 +1,9 @@
+## 1.3.0 (2024-05-05)
+
+### Feat
+
+- **config**: added database configuration
+
 ## 1.2.1 (2024-05-04)
 
 ### Fix
