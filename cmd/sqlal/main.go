@@ -48,7 +48,7 @@ func main() {
 
 	homeDir, _ := os.UserHomeDir()
 	configFilePath := filepath.Join(homeDir, defaultConfigDir, defaultConfigFileName)
-	fmt.Println(configFilePath)
+
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
 		config()
 		return
@@ -61,6 +61,9 @@ func main() {
 			return
 		case "stop":
 			stop()
+			return
+		case "restart":
+			restart()
 			return
 		case "config":
 			config()
@@ -149,14 +152,6 @@ func initializeDirectories() error {
 	}
 
 	return nil
-}
-
-func writeConfig(config internal.Config, filename string) error {
-	configData, err := json.MarshalIndent(config, "", "    ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(filename, configData, 0644)
 }
 
 func getDefaultConfigFilePath() string {
@@ -308,23 +303,44 @@ func contains(slice []int, item int) bool {
 }
 
 func start() {
-	fmt.Println("Starting sqlal...")
-	cmd := exec.Command(os.Args[0])
+	cmd := exec.Command("pgrep", "-f", os.Args[0])
+
+	output, _ := cmd.Output()
+	if len(output) != 0 {
+		fmt.Println("Already started!")
+		return
+	}
+
+	fmt.Println("Starting SQL Alerts...")
+	cmd = exec.Command(os.Args[0])
 	err := cmd.Start()
 	if err != nil {
-		log.Fatalf("Failed to start sqlal: %v", err)
+		log.Fatalf("Failed to start SQL Alerts: %v", err)
 	}
-	fmt.Println("sqlal started successfully.")
+	fmt.Println("SQL Alerts started successfully.")
 }
 
 func stop() {
+	cmd := exec.Command("pgrep", "-f", os.Args[0])
+
+	output, _ := cmd.Output()
+	if len(output) == 0 {
+		fmt.Println("Nothing to stop")
+		return
+	}
+
 	fmt.Println("Stopping sqlal...")
 	out, err := exec.Command("pkill", "-f", os.Args[0]).CombinedOutput()
 	if err != nil {
 		log.Fatalf("Failed to stop sqlal: %v", err)
 	}
-	fmt.Println(string(out))
+	fmt.Print(string(out))
 	fmt.Println("sqlal stopped.")
+}
+
+func restart() {
+	stop()
+	start()
 }
 
 func config() {
