@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
@@ -32,9 +33,10 @@ type model struct {
 	selected   *int
 	topButtons []string
 
+	inputsSettings []textinput.Model
+	inputsDB       []textinput.Model
 	inputsQuery    []textinput.Model
 	inputTextQuery textarea.Model
-	inputsDB       []textinput.Model
 	focusIndex     int
 }
 
@@ -60,10 +62,12 @@ func checkConfig() tea.Msg {
 
 func InitialModel() model {
 	m := model{
-		selected:    nil,
-		topButtons:  []string{"Configure database", "Create new query\n"},
-		inputsQuery: make([]textinput.Model, 3),
-		inputsDB:    make([]textinput.Model, 5),
+		selected:       nil,
+		focusIndex:     0,
+		topButtons:     []string{"Configure settings", "Configure database", "Create new query\n"},
+		inputsSettings: make([]textinput.Model, 3),
+		inputsDB:       make([]textinput.Model, 5),
+		inputsQuery:    make([]textinput.Model, 3),
 	}
 
 	m.SetInputs()
@@ -122,6 +126,26 @@ func (m *model) SetInputs() {
 
 		m.inputsDB[i] = t
 	}
+
+	for i := range m.inputsSettings {
+		t = textinput.New()
+		t.Cursor.Style = cursorStyle
+		t.CharLimit = 512
+
+		switch i {
+		case 0:
+			t.Placeholder = "Base notification URL (https://ntfy.sh/)"
+			t.Focus()
+			t.PromptStyle = focusedStyle
+			t.TextStyle = focusedStyle
+		case 1:
+			t.Placeholder = "Notification message (must inclide one %d for rows number including)"
+		case 2:
+			t.Placeholder = "Check interval in seconds"
+		}
+
+		m.inputsSettings[i] = t
+	}
 }
 
 func (m model) Init() tea.Cmd {
@@ -153,24 +177,33 @@ func (m *model) handleInputsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "tab", "shift+tab":
 		if *m.selected == 0 {
+			return m.navigateInputsSettings(msg.String())
+		}
+		if *m.selected == 1 {
 			return m.navigateInputsDB(msg.String())
 		}
-		if *m.selected > 0 {
+		if *m.selected > 1 {
 			return m.navigateInputsQuery(msg.String())
 		}
 	case "up", "down", "enter":
 		if *m.selected == 0 {
+			return m.navigateInputsSettings(msg.String())
+		}
+		if *m.selected == 1 {
 			return m.navigateInputsDB(msg.String())
 		}
-		if *m.selected > 0 && m.focusIndex != len(m.inputsQuery) {
+		if *m.selected > 1 && m.focusIndex != len(m.inputsQuery) {
 			return m.navigateInputsQuery(msg.String())
 		}
 	}
 
 	if *m.selected == 0 {
+		return m, m.updateInputsSettings(msg)
+	}
+	if *m.selected == 1 {
 		return m, m.updateInputsDB(msg)
 	}
-	if *m.selected > 0 {
+	if *m.selected > 1 {
 		return m, m.updateInputsQuery(msg)
 	}
 
@@ -308,6 +341,58 @@ func (m model) navigateInputsDB(s string) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m model) navigateInputsSettings(s string) (tea.Model, tea.Cmd) {
+	if s == "enter" && m.focusIndex == len(m.inputsSettings) {
+		seconds, _ := strconv.Atoi(m.inputsSettings[2].Value())
+
+		newSettings := Config{
+			Database:             m.config.Database,
+			Queries:              m.config.Queries,
+			BaseNotificationURL:  m.inputsSettings[0].Value(),
+			NotificationMessage:  m.inputsSettings[1].Value(),
+			CheckIntervalSeconds: seconds,
+		}
+		m.config.UpdateSettings(&newSettings)
+		m.config.SaveToFile(filePath)
+		m.SetInputs()
+
+		m.selected = nil
+		m.focusIndex = 0
+
+		return m, nil
+	}
+
+	// Cycle indexes
+	if s == "up" || s == "shift+tab" {
+		m.focusIndex--
+	} else {
+		m.focusIndex++
+	}
+
+	if m.focusIndex > len(m.inputsSettings) {
+		m.focusIndex = 0
+	} else if m.focusIndex < 0 {
+		m.focusIndex = len(m.inputsSettings)
+	}
+
+	cmds := make([]tea.Cmd, len(m.inputsSettings))
+	for i := 0; i <= len(m.inputsSettings)-1; i++ {
+		if i == m.focusIndex {
+			// Set focused state
+			cmds[i] = m.inputsSettings[i].Focus()
+			m.inputsSettings[i].PromptStyle = focusedStyle
+			m.inputsSettings[i].TextStyle = focusedStyle
+			continue
+		}
+		// Remove focused state
+		m.inputsSettings[i].Blur()
+		m.inputsSettings[i].PromptStyle = noStyle
+		m.inputsSettings[i].TextStyle = noStyle
+	}
+
+	return m, tea.Batch(cmds...)
+}
+
 func (m model) deleteQuery() (tea.Model, tea.Cmd) {
 	if m.cursor >= len(m.topButtons) {
 		m.config.DeleteQueryByIndex(m.cursor - len(m.topButtons))
@@ -343,8 +428,11 @@ func (m *model) toggleSelected() (tea.Model, tea.Cmd) {
 	switch m.cursor {
 	case 0:
 		m.selected = &m.cursor
-		setInputsFromDB(&m.config, m.inputsDB)
+		setInputsFromSettings(&m.config, m.inputsSettings)
 	case 1:
+		m.selected = &m.cursor
+		setInputsFromDB(&m.config, m.inputsDB)
+	case 2:
 		m.selected = &m.cursor
 		clearInputs(m.inputsQuery, &m.inputTextQuery)
 	default:
@@ -396,6 +484,20 @@ func setInputsFromDB(config *Config, inputs []textinput.Model) {
 	}
 }
 
+func setInputsFromSettings(config *Config, inputs []textinput.Model) {
+	for i, input := range inputs {
+		switch i {
+		case 0:
+			input.SetValue(config.BaseNotificationURL)
+		case 1:
+			input.SetValue(config.NotificationMessage)
+		case 2:
+			input.SetValue(strconv.Itoa(config.CheckIntervalSeconds))
+		}
+		inputs[i] = input
+	}
+}
+
 func (m *model) updateInputsQuery(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(m.inputsQuery))
 
@@ -421,9 +523,17 @@ func (m *model) updateInputsDB(msg tea.Msg) tea.Cmd {
 		m.inputsDB[i], cmds[i] = m.inputsDB[i].Update(msg)
 	}
 
-	var cmd tea.Cmd
-	m.inputTextQuery, cmd = m.inputTextQuery.Update(msg)
-	cmds = append(cmds, cmd)
+	return tea.Batch(cmds...)
+}
+
+func (m *model) updateInputsSettings(msg tea.Msg) tea.Cmd {
+	cmds := make([]tea.Cmd, len(m.inputsSettings))
+
+	// Only text inputs with Focus() set will respond, so it's safe to simply
+	// update all of them here without any further logic.
+	for i := range m.inputsSettings {
+		m.inputsSettings[i], cmds[i] = m.inputsSettings[i].Update(msg)
+	}
 
 	return tea.Batch(cmds...)
 }
@@ -433,16 +543,22 @@ func (m model) View() string {
 		return m.renderInputsView(m.inputsQuery, &m.inputTextQuery)
 	} else if m.shouldShowDBView() {
 		return m.renderInputsView(m.inputsDB, nil)
+	} else if m.shouldShowSettingsView() {
+		return m.renderInputsView(m.inputsSettings, nil)
 	} else {
 		return m.renderConfigMenuView()
 	}
 }
 
 func (m model) shouldShowInputsView() bool {
-	return m.selected != nil && *m.selected > 0
+	return m.selected != nil && *m.selected > 1
 }
 
 func (m model) shouldShowDBView() bool {
+	return m.selected != nil && *m.selected == 1
+}
+
+func (m model) shouldShowSettingsView() bool {
 	return m.selected != nil && *m.selected == 0
 }
 

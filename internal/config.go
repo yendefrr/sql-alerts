@@ -108,3 +108,7 @@ func (c *Config) DeleteQueryByIndex(index int) {
 func (c *Config) UpdateDB(newDB DatabaseConfig) {
 	c.Database = newDB
 }
+
+func (c *Config) UpdateSettings(newSettings *Config) {
+	*c = *newSettings
+}
