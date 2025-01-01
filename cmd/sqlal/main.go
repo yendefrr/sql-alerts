@@ -311,7 +311,6 @@ func start() {
 		return
 	}
 
-	fmt.Println("Starting SQL Alerts...")
 	cmd = exec.Command(os.Args[0])
 	err := cmd.Start()
 	if err != nil {
@@ -329,13 +328,11 @@ func stop() {
 		return
 	}
 
-	fmt.Println("Stopping sqlal...")
-	out, err := exec.Command("pkill", "-f", os.Args[0]).CombinedOutput()
+	_, err := exec.Command("pkill", "-f", os.Args[0]).CombinedOutput()
 	if err != nil {
 		log.Fatalf("Failed to stop sqlal: %v", err)
 	}
-	fmt.Print(string(out))
-	fmt.Println("sqlal stopped.")
+	fmt.Println("SQL Alerts stopped successfully.")
 }
 
 func restart() {

@@ -1,6 +1,6 @@
 module github.com/yendefrr/sql-alerts
 
-go 1.21.6
+go 1.23.3
 
 require (
 	github.com/charmbracelet/bubbles v0.18.0
