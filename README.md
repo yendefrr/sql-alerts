@@ -10,10 +10,8 @@ Just check new rows by specified queries and send notification to [ntfy](https:/
 
 ### Installation
 ```bash
-brew tap yendefrr/tap
-brew install sql-alerts
+curl https://raw.githubusercontent.com/yendefrr/sql-alerts/refs/heads/main/install.sh | sh
 ```
-For linux use `install.sh` or download from latest release
 
 ### Configuration
 
